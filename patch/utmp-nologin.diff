@@ -1,0 +1,45 @@
+Copied from https://git.suckless.org/utmp/commit/4a855c000f1d300a44c784ed88d78a11d41cdca7.html#h0-1-4
+
+---
+M	utmp.c	|	16	+++++++++++++---
+1 file changed, 3 insertions(+), 13 deletions(-)
+
+diff --git a/utmp.c b/utmp.c
+@@ -38,10 +38,8 @@ int
+ main(int argc, char *argv[])
+ {
+ 	int status;
+-	size_t len;
+ 	uid_t uid;
+ 	sigset_t set;
+-	char *p, argv0[FILENAME_MAX], *sh;
+ 	extern void addutmp(void), delutmp(void);
+ 
+ 	egid = getegid();
+@@ -59,23 +61,15 @@ main(int argc, char *argv[])
+ 	setenv("SHELL", pw->pw_shell, 1);
+ 	setenv("HOME", pw->pw_dir, 1);
+ 
+-	if ((p = strrchr(pw->pw_shell, '/')) == NULL)
+-		die("incorrect shell field of passwd");
+-	if ((len = strlen(++p)) > sizeof(argv0) - 2)
+-		die("shell name too long");
+-	argv0[0] = '-';
+-	memcpy(&argv0[1], p, len);
+-
+ 	sigfillset(&set);
+ 	sigprocmask(SIG_BLOCK, &set, NULL);
+ 
+ 	switch (fork()) {
+ 	case 0:
+ 		sigprocmask(SIG_UNBLOCK, &set, NULL);
++		argv[0] = getenv("SHELL");
++		execv(argv[0], argv);
++		die("error executing shell:%s", strerror(errno));
+-		sh = pw->pw_shell;
+-		argv[0] = argv0;
+-		execv(sh, argv);
+-		die("error executing shell(%s):%s", sh, strerror(errno));
+ 	case -1:
+ 		die("error spawning child:%s", strerror(errno));
+ 	default:
